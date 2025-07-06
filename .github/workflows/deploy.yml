@@ -17,7 +17,7 @@ jobs:
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/networkingCaOne.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/networkingCaOne.pem
           chmod 600 ~/.ssh/networkingCaOne.pem
 
       - name: Add EC2 Host to Known Hosts
