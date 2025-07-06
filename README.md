@@ -1,16 +1,33 @@
 # AWS Flask Deployment with Terraform, Ansible, and Docker
 
 ## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Prerequisites](#prerequisites)
-3. [Project Structure](#project-structure)
-4. [Getting Started](#getting-started)
-5. [Workflow Explanation](#workflow-explanation)
-6. [Network Architecture](#network-architecture)
-7. [Detailed Component Breakdown](#detailed-component-breakdown)
-8. [Troubleshooting](#troubleshooting)
-9. [Cleanup](#cleanup)
-10. [Contributing](#contributing)
+
+1. [Project Overview](#project-overview)  
+2. [Prerequisites](#prerequisites)  
+3. [Project Structure](#project-structure)  
+4. [Getting Started](#getting-started)  
+   - [1. Clone the Repository](#1-clone-the-repository)  
+   - [2. Configure AWS (only if running Terraform manually)](#2-configure-aws-only-if-running-terraform-manually)  
+   - [3. Provision Infrastructure (Manual Terraform Option)](#3-provision-infrastructure-manual-terraform-option)  
+   - [4. Update Ansible Inventory](#4-update-ansible-inventory)  
+   - [5. Push Code to Trigger GitHub Actions](#5-push-code-to-trigger-github-actions)  
+   - [6. CI/CD Pipeline Execution](#6-cicd-pipeline-execution)  
+   - [7. Flask App Verification (Inside EC2 - if needed)](#7-flask-app-verification-inside-ec2---if-needed)  
+   - [8. Access the Application](#8-access-the-application)  
+5. [Workflow Explanation](#workflow-explanation)  
+6. [Network Architecture](#network-architecture)  
+7. [Detailed Component Breakdown](#detailed-component-breakdown)  
+   - [GitHub Actions (.github/workflows/deploy.yml)](#github-actions-githubworkflowsdeployyml)  
+   - [Ansible (ansible/)](#ansible-ansible)  
+   - [Flask App (app/)](#flask-app-app)  
+   - [Terraform (terraform/)](#terraform-terraform)  
+8. [Troubleshooting](#troubleshooting)  
+9. [Cleanup](#cleanup)  
+10. [Contributing](#contributing)  
+11. [License](#license)  
+12. [Notes](#notes)  
+13. [Ansible Flow chart](#ansible-flow-chart)  
+
 
 ## Project Overview
 
@@ -64,105 +81,86 @@ networkingCaOne/
     └── report-template.md     # Project report template
 ```
 
-## Getting Started
+## **Getting Started**
 
-### 1. Clone the Repository
+### **1\. Clone the Repository**
 
-```bash
-git clone <your-repository-url>
+git clone &lt;your-repo-url&gt;
+
 cd networkingCaOne
-```
 
-### 2. Configure AWS Credentials
+### **2\. Configure AWS (only if running Terraform manually)**
 
-Ensure your AWS credentials are configured:
-
-```bash
 aws configure
-```
 
-### 3. Initialize and Apply Terraform
+### **3\. Provision Infrastructure (Manual Terraform Option)**
 
-```bash
-# Navigate to terraform directory
+If provisioning manually:
+
 cd terraform
 
-# Initialize Terraform
 terraform init
 
-# Review changes
 terraform plan
 
-# Apply changes (creates AWS resources)
 terraform apply
 
-# Note the EC2 public IP from the output
-terraform output public_ip
-```
+Save the output EC2 public IP.
 
-### 4. Update Ansible Inventory
+### **4\. Update Ansible Inventory**
 
-Update the inventory file with your EC2 instance's public IP:
+Update ansible/inventory.ini:
 
-```bash
-cd ../ansible
+\[webserver\]
 
-# Edit inventory.ini and replace the IP address with your EC2 instance's public IP
-# The file should look like this:
-# [webserver]
-# YOUR_EC2_IP ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/networkingCaOne.pem
-```
-[webserver]
-3.250.239.10 ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/networkingCaOne.pem
-### 5. Run Ansible Playbook
+3.250.239.10 ansible_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/networkingCaOne.pem
 
-```bash
-# Run the playbook to configure the EC2 instance and deploy the application
-ansible-playbook playbooks/setup.yml
+### **5\. Push Code to Trigger GitHub Actions**
 
-ansible-playbook -i ansible/inventory.ini ansible/playbooks/setup.yml # arham in WSL
-```
+git status
 
-### 6. Verify Flask App Directory Structure
+git add .
 
-Ensure the Flask app has the correct directory structure on the EC2 instance:
+git commit -m "Final deployment"
 
-```bash
-# Connect to your EC2 instance
-ssh -i ~/.ssh/networkingCaOne.pem ec2-user@YOUR_EC2_IP
+git push origin main
 
-# Check if templates directory exists
+### **6\. CI/CD Pipeline Execution**
+
+- GitHub Actions runs automatically upon push
+- It sets up SSH, installs Ansible, and executes the playbook
+- The playbook installs Docker and deploys the Flask app inside a container
+
+### **7\. Flask App Verification (Inside EC2 - if needed)**
+
+ssh -i ~/.ssh/networkingCaOne.pem ec2-user@3.250.239.10
+
+\# Confirm app directory and template file
+
 ls -la /home/ec2-user/app/
 
-# If index.html exists in app directory, move it to templates
+\# Move index.html to templates/ if needed
+
 mv /home/ec2-user/app/index.html /home/ec2-user/app/templates/
 
-# Rebuild and restart the Docker container
+\# Rebuild and run container manually (optional)
+
 cd /home/ec2-user/app
+
 docker stop flask-app
+
 docker rm flask-app
+
 docker build -t flask-app .
+
 docker run -d --name flask-app -p 5000:5000 flask-app
-```
 
-### 7. Verify Deployment
+### **8\. Access the Application**
 
-```bash
-# Check Docker container status
-docker ps
+Visit:
 
-# View container logs
-docker logs flask-app
-```
+<http://3.250.239.10:5000>
 
-### 8. Access the Application
-
-Once deployment is complete, access the application in your browser at:
-```
-http://YOUR_EC2_IP:5000
-```
-
-Replace `YOUR_EC2_IP` with the public IP address of your EC2 instance.
 
 ## Workflow Explanation
 
@@ -226,82 +224,63 @@ Replace `YOUR_EC2_IP` with the public IP address of your EC2 instance.
 
 ```
 
-## Detailed Component Breakdown
+## **Detailed Component Breakdown**
 
-### 1. GitHub Repository
-- **Purpose**: Version control and collaboration
-- **Key Files**:
-  - `.github/workflows/deploy.yml`: Defines the CI/CD pipeline
-  - `README.md`: Project documentation
+### **GitHub Actions (.github/workflows/deploy.yml)**
 
-### 2. Terraform Configuration (`/terraform`)
-- **Purpose**: Infrastructure as Code (IaC)
-- **Key Files**:
-  - `main.tf`: Defines AWS resources (VPC, EC2, security groups)
-  - `variables.tf`: Declares input variables
-  - `terraform.tfvars`: Contains variable values
-  - `.terraform.lock.hcl`: Lock file for provider versions
+- Triggers pipeline
+- Loads SSH key from GitHub Secrets
+- Installs Ansible and runs playbook
 
-### 3. Ansible Configuration (`/ansible`)
-- **Purpose**: Configuration management and deployment
-- **Key Files**:
-  - `ansible.cfg`: Configuration settings for Ansible
-  - `inventory.ini`: Defines target hosts
-  - `playbooks/setup.yml`: Main playbook
-  - `playbooks/roles/`: Contains reusable roles
+### **Ansible (ansible/)**
 
-### 4. Application Code (`/app`)
-- **Purpose**: The Flask web application
-- **Key Files**:
-  - `app.py`: Main application code
-  - `requirements.txt`: Python dependencies
-  - `Dockerfile`: Container configuration
-  - `templates/index.html`: HTML template
+- inventory.ini: IP and SSH config
+- setup.yml: Executes docker + app roles
+- roles/docker: Docker installation
+- roles/app: Flask container deployment
 
-### 5. Documentation (`/docs`)
-- **Purpose**: Project documentation
-- **Key Files**:
-  - `architecture-diagram.txt`: Network architecture
-  - `report-template.md`: Project report template
+### **Flask App (app/)**
 
-## Troubleshooting
+- app.py, Dockerfile, requirements.txt
+- templates/index.html as homepage
 
-### Common Issues
+### **Terraform (terraform/)**
 
-1. **SSH Connection Issues**
-   - Verify the key pair exists in AWS and locally
-   - Check security group allows SSH (port 22)
-   - Ensure the EC2 instance is running
+- main.tf, variables.tf, terraform.tfvars
+- Provisions EC2 and SG for SSH + HTTP
 
-2. **Docker Permission Issues**
-   - Ensure the user is added to the docker group
-   - Restart the Docker service if needed
+## **Troubleshooting**
 
-3. **Application Not Accessible**
-   - Check if the container is running: `docker ps`
-   - Check container logs: `docker logs <container_id>`
-   - Verify security group allows traffic on port 5000
+- **SSH Failures**: Check key path and permission (chmod 600)
+- **App Not Showing**:
+  - Is container running? docker ps
+  - Logs: docker logs flask-app
+  - Is port 5000 open in SG?
 
-## Cleanup
+## **Cleanup**
 
-To avoid unnecessary AWS charges, destroy the infrastructure when done:
+To destroy EC2 instance:
 
-```bash
 cd terraform
+
 terraform destroy
-```
 
-## Contributing
+## **Contributing**
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. Fork repo
+2. Create feature branch
+3. Commit changes
+4. Open PR
 
-## License
+## **License**
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License – see LICENSE file.
+
+## **Notes**
+
+- Deployment is automated via GitHub Actions
+- Uses Amazon Linux 2, user: ec2-user
+- CI/CD tested in GitHub-hosted runner (Ubuntu)
 
 ## Ansible Flow chart
 ansible/
