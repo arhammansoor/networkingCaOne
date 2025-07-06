@@ -17,8 +17,8 @@ jobs:
       - name: Set up SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/networkingCaOne.pem
+          chmod 600 ~/.ssh/networkingCaOne.pem
 
       - name: Add EC2 Host to Known Hosts
         run: |
@@ -27,4 +27,4 @@ jobs:
       - name: Deploy App via Ansible
         run: |
           sudo apt update && sudo apt install -y ansible
-          ansible-playbook -i ansible/inventory.ini ansible/playbooks/setup.yml
+          ansible-playbook -i ansible/inventory.ini ansible/playbooks/setup.yml --private-key /home/runner/.ssh/networkingCaOne.pem
