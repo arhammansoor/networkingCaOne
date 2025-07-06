@@ -1,0 +1,30 @@
+name: Deploy Flask App to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy on EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Add EC2 Host to Known Hosts
+        run: |
+          ssh-keyscan -H 3.250.239.10 >> ~/.ssh/known_hosts
+
+      - name: Deploy App via Ansible
+        run: |
+          sudo apt update && sudo apt install -y ansible
+          ansible-playbook -i ansible/inventory.ini ansible/playbooks/setup.yml
