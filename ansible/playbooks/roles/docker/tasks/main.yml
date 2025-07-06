@@ -1,0 +1,51 @@
+---
+# Install Docker on Amazon Linux 2023
+- name: Update all packages
+  become: yes
+  dnf:
+    name: '*'
+    state: latest
+    update_only: yes
+
+- name: Install Docker
+  become: yes
+  dnf:
+    name: docker
+    state: present
+
+- name: Start Docker service
+  become: yes
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add ec2-user to docker group
+  become: yes
+  user:
+    name: ec2-user
+    groups: docker
+    append: yes
+
+- name: Fix Docker socket permissions
+  become: yes
+  file:
+    path: /var/run/docker.sock
+    mode: '0666'
+    state: file
+
+- name: Reset SSH connection to apply new group membership
+  meta: reset_connection
+
+- name: Install pip
+  become: yes
+  dnf:
+    name: python3-pip
+    state: present
+
+- name: Install Docker Python module
+  become: yes
+  pip:
+    name: docker
+    state: present
+    extra_args: --ignore-installed

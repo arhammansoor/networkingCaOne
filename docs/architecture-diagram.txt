@@ -1,0 +1,38 @@
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|  GitHub          |     |  GitHub Actions  |     |  AWS Cloud       |
+|  Repository      +---->+  CI/CD Pipeline  +---->+                  |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     |  +-------------+ |
+                                                  |  |             | |
+                                                  |  |  VPC        | |
+                                                  |  |             | |
+                                                  |  |  +-------+  | |
+                                                  |  |  |       |  | |
+                                                  |  |  |  EC2  |  | |
+                                                  |  |  |       |  | |
+                                                  |  |  +---+---+  | |
+                                                  |  |      |      | |
+                                                  |  |  +---v---+  | |
+                                                  |  |  |       |  | |
+                                                  |  |  |Docker |  | |
+                                                  |  |  |       |  | |
+                                                  |  |  +---+---+  | |
+                                                  |  |      |      | |
+                                                  |  |  +---v---+  | |
+                                                  |  |  |       |  | |
+                                                  |  |  | Flask |  | |
+                                                  |  |  |  App  |  | |
+                                                  |  |  |       |  | |
+                                                  |  |  +-------+  | |
+                                                  |  |             | |
+                                                  |  +-------------+ |
+                                                  |                  |
+                                                  +------------------+
+
+Deployment Flow:
+1. Developer pushes code to GitHub repository
+3. Terraform provisions AWS infrastructure (VPC, EC2, Security Groups)
+4. Ansible configures the EC2 instance and installs Docker
+5. Docker builds and runs the Flask application container
+6. Application is accessible via the EC2 public IP address

@@ -1,0 +1,8 @@
+aws_region        = "eu-west-1"
+vpc_cidr_block    = "10.0.0.0/16"
+subnet_cidr_block = "10.0.1.0/24"
+ami_id            = "ami-0fab1b527ffa9b942"  # Amazon Linux 2 AMI in eu-west-1
+instance_type     = "t2.micro"
+key_name          = "networkingCaOne"
+public_key_path   = "~/.ssh/aws_key.pub"
+private_key_path  = "~/.ssh/aws_key"

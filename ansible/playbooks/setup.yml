@@ -1,0 +1,7 @@
+---
+- name: Setup Docker and deploy Flask application
+  hosts: webserver
+  become: yes
+  roles:
+    - docker
+    - app

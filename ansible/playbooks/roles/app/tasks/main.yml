@@ -1,0 +1,41 @@
+---
+- name: Create app directory
+  file:
+    path: /home/ec2-user/app
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: '0755'
+
+- name: Copy Flask application files (non-directory files)
+  copy:
+    src: "{{ item }}"
+    dest: /home/ec2-user/app/
+    owner: ec2-user
+    group: ec2-user
+    mode: '0644'
+  with_items:
+    - ../../../../../app/app.py
+    - ../../../../../app/requirements.txt
+    - ../../../../../app/Dockerfile
+
+- name: Copy templates directory recursively using synchronize
+  synchronize:
+    src: ../../../../../app/templates/
+    dest: /home/ec2-user/app/templates/
+    recursive: yes
+    rsync_opts:
+      - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+
+- name: Build Docker image using shell
+  become: yes
+  shell: |
+    cd /home/ec2-user/app
+    docker build -t flask-app .
+
+- name: Run Flask app container using shell
+  become: yes
+  shell: |
+    docker stop flask-app || true
+    docker rm flask-app || true
+    docker run -d --name flask-app -p 5000:5000 --restart always flask-app
